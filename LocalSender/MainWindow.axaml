@@ -11,6 +11,8 @@
         Background="#F2F2F7"
         ExtendClientAreaToDecorationsHint="True"
         RequestedThemeVariant="Light"
+        SystemDecorations="BorderOnly"
+        BorderThickness="0"
         >
 
     <Window.Styles>
@@ -36,22 +38,32 @@
         <Style Selector="TextBox:pointerover /template/ TextBlock#PART_Watermark">
             <Setter Property="Foreground" Value="#A1A1A1"/>
         </Style>
+        <Style Selector="Button.WindowControl:pointerover /template/ ContentPresenter">
+            <Setter Property="Opacity" Value="0.7"/>
+            <Setter Property="Background" Value="{Binding $parent[Button].Background}"/>
+        </Style>
     </Window.Styles>
+
     <StackPanel Margin="0">
-       <Grid Height="30">
-            <TextBlock Text="LocalSender"
-                       Foreground="#333333"
-                       FontSize="12"
-                       HorizontalAlignment="Center"
-                       VerticalAlignment="Center"
-                       IsHitTestVisible="False"/>
+       <Grid Name="Title" Height="40" Background="Transparent">
+           <StackPanel Orientation="Horizontal" Spacing="6" Margin="15,0" HorizontalAlignment="Left" VerticalAlignment="Center">
+               <Button Name="CloseButton" Height="12" Width="12" Background="#FF5F57" CornerRadius="6" BorderThickness="0" Classes="WindowControl"/>
+               <Button Name="MinimizeButton" Height="12" Width="12" Background="#FFBD2E" CornerRadius="6" BorderThickness="0" Classes="WindowControl"/>
+           </StackPanel>
+
+           <TextBlock Text="LocalSender"
+                      Foreground="#333333"
+                      FontSize="12"
+                      HorizontalAlignment="Center"
+                      VerticalAlignment="Center"
+                      IsHitTestVisible="False"/>
         </Grid>
         <StackPanel VerticalAlignment="Center"
                     HorizontalAlignment="Center"
                     Spacing="10"
                     Margin="30">
             <TextBox Name="ContentInput"
-                     Watermark="Напиши сюда текст!!"
+                     Watermark="Напиши сюда текст!!!"
                      Width="280"
                      Padding="20,10"
                      TextAlignment="Center"
@@ -60,8 +72,10 @@
                      CornerRadius="8"
                      Background="White"
                      Foreground="Black"
-                     CaretBrush="Black"/>
-            <Border BorderBrush="#D1D1D6"
+                     CaretBrush="Black"
+                     SelectionBrush="#007AFF"/>
+            <Border Name="ImageBorder"
+                    BorderBrush="#D1D1D6"
                     BorderThickness="1"
                     Width="200"
                     Height="200"
