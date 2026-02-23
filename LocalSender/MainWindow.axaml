@@ -4,7 +4,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         x:Class="LocalSender.MainWindow"
         Title="LocalSender"
-        Width="350" Height="450"
+        Width="400" Height="450"
         WindowStartupLocation="CenterScreen"
         CanResize="False"
         Background="#F2F2F7"
@@ -51,7 +51,8 @@
                <Button Name="MinimizeButton" Height="12" Width="12" Background="#FFBD2E" CornerRadius="6" BorderThickness="0" Classes="WindowControl"/>
            </StackPanel>
 
-           <TextBlock Text="LocalSender"
+           <TextBlock Name="textTitle"
+                      Text="LocalSender"
                       Foreground="#333333"
                       FontSize="12"
                       HorizontalAlignment="Center"
@@ -73,7 +74,8 @@
                      Background="White"
                      Foreground="Black"
                      CaretBrush="Black"
-                     SelectionBrush="#007AFF"/>
+                     SelectionBrush="#007AFF"
+                     />
             <Border Name="ImageBorder"
                     BorderBrush="#D1D1D6"
                     BorderThickness="1"
@@ -95,12 +97,12 @@
                     Background="#007AFF"
                     Foreground="White"
                     CornerRadius="8"/>
-            <Button Name="testbtn"
+            <Button Name="IPbtn"
                     Content="IP"
                     Width="250"
                     HorizontalAlignment="Center"
                     HorizontalContentAlignment="Center"
-                    Padding="20, 10"
+                    Padding="20,10"
                     FontSize="15"
                     FontWeight="SemiBold"
                     Background="#007AFF"

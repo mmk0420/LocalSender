@@ -12,34 +12,32 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Net;
 using System.Net.Sockets;
+using System.Diagnostics;
+using Tmds.DBus.Protocol;
 
 namespace LocalSender
 {
     public partial class MainWindow : Window
     {
+
+        Avalonia.Controls.TextBox textInput;
+        Avalonia.Controls.Image Img;
+        Avalonia.Controls.TextBlock TitleText;
         string? fileToShare;
         public MainWindow()
         {
             InitializeComponent();
 
-            var textInput = this.Find<TextBox>("ContentInput");
+            textInput = this.Find<TextBox>("ContentInput");
             var sendBtn = this.Find<Button>("SendButton");
-            var Img = this.Find<Avalonia.Controls.Image>("QRCode");
+            Img = this.Find<Avalonia.Controls.Image>("QRCode");
             var CloseBtn = this.Find<Button>("CloseButton");
             var MinBtn = this.Find<Button>("MinimizeButton");
             var TitleBar = this.Find<Grid>("Title");
-            var test = this.Find<Button>("testbtn");
+            var ipBtn = this.Find<Button>("IPbtn");
+            TitleText = this.Find<TextBlock>("textTitle");
 
-            test.Click += (s, e) =>
-            {
-                string ip = GetLocalIp();
-                string shareURL = $"http://{ip}:8080/";
-
-                Img.Source = QRgenerator(shareURL);
-
-                Task.Run(() => StartServer()); 
-            };
-            
+            ipBtn.Click += (s, e) => LocalSend();
 
             AddHandler(DragDrop.DropEvent, OnFileDrop);
 
@@ -104,43 +102,6 @@ namespace LocalSender
             };
         }
 
-        private string GetLocalIp()
-        {
-            var host = Dns.GetHostEntry(Dns.GetHostName());
-            foreach (var ip in host.AddressList)
-            {
-                if (ip.AddressFamily == AddressFamily.InterNetwork)
-                {
-                    return ip.ToString();
-                }
-            }
-            return "127.0.0.1";
-        }
-
-        private async Task StartServer() //вы не представляете как мне нравится все это писать, я себя реально гением чувствую когда чтото получается
-        {
-            var listenner = new HttpListener();
-            var ip = GetLocalIp();
-
-            listenner.Prefixes.Add($"http://{ip}:8080/"); //КТО Ж СУКА ЗНАЛ ЧТО ПРОСТО {ip}:{port} ЭТОЙ МРАЗИ НЕДОСТАТОЧНО
-            listenner.Start();
-
-            string shareurl = $"http://{ip}:8080/"; 
-
-            while(true)
-            {
-                var context = await listenner.GetContextAsync();
-                var response = context.Response;
-
-                if (fileToShare != null && File.Exists(fileToShare))
-                {
-
-                }
-            }
-
-
-        }
-
         private Avalonia.Media.Imaging.Bitmap QRgenerator(string QRtext)
         {
             QRCodeGenerator QRgen = new QRCodeGenerator();
@@ -159,7 +120,6 @@ namespace LocalSender
         private void OnFileDrop(object? sender, DragEventArgs e)
         {
             var files = e.Data.GetFiles();
-            var textInput = this.Find<TextBox>("ContentInput");
 
             if (files != null)
             {
@@ -176,6 +136,48 @@ namespace LocalSender
                         textInput.BorderBrush = Brushes.DeepSkyBlue;
                         textInput.BorderThickness = new Avalonia.Thickness(2);
                     }
+                }
+            }
+        }
+
+        private async Task LocalSend()
+        {
+            if (fileToShare != null && File.Exists(fileToShare))
+            {
+                var listener = new HttpListener();
+                listener.Prefixes.Add("http://+:8085/");
+                try
+                {
+                    listener.Start();
+                    Img.Source = QRgenerator("http://192.168.0.207:8085");
+                    TitleText.Text = "zaebok";
+                }
+                catch (Exception ex) { TitleText.Text = $"Ошибка: {ex.Message}"; }
+
+                while (true)
+                {
+                    var context = await listener.GetContextAsync();
+                    var response = context.Response;
+
+                    response.ContentType = "application/octet-stream";
+
+                    string fileName = Path.GetFileName(fileToShare);
+                    string RUSSIAfileName = Uri.EscapeDataString(fileName);
+
+                    response.AddHeader("Content-Disposition", $"attachment; filename=\"{RUSSIAfileName}\""); 
+
+                    using (FileStream fs = new FileStream(fileToShare, FileMode.Open, FileAccess.Read))
+                    {
+                        response.ContentLength64 = fs.Length;
+                        byte[] buffer = new byte[81920];
+                        int bytesRead;
+
+                        while ((bytesRead = fs.Read(buffer, 0, buffer.Length)) > 0)
+                        {
+                            response.OutputStream.Write(buffer, 0, bytesRead);
+                        }
+                    }
+                    response.OutputStream.Close();
                 }
             }
         }
