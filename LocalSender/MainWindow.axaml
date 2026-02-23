@@ -13,6 +13,7 @@
         RequestedThemeVariant="Light"
         SystemDecorations="BorderOnly"
         BorderThickness="0"
+        DragDrop.AllowDrop="True"
         >
 
     <Window.Styles>

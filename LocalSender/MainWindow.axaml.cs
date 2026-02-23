@@ -4,15 +4,20 @@ using Avalonia.Input;
 using Avalonia.Input.Platform;
 using Avalonia.Media;
 using Avalonia.Metadata;
+using Avalonia.Platform.Storage;
 using QRCoder;
 using System;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
+using System.Net;
+using System.Net.Sockets;
 
 namespace LocalSender
 {
     public partial class MainWindow : Window
     {
+        string? fileToShare;
         public MainWindow()
         {
             InitializeComponent();
@@ -23,6 +28,9 @@ namespace LocalSender
             var CloseBtn = this.Find<Button>("CloseButton");
             var MinBtn = this.Find<Button>("MinimizeButton");
             var TitleBar = this.Find<Grid>("Title");
+
+
+            AddHandler(DragDrop.DropEvent, OnFileDrop);
 
             this.Activated += async (s, e) =>
             {
@@ -78,25 +86,63 @@ namespace LocalSender
                 }
                 else
                 {
+                    string QRtext = textInput.Text;
                     textInput.BorderBrush = new SolidColorBrush(Color.Parse("#007AFF"));
-                    QRCodeGenerator QRgen = new QRCodeGenerator();
-                    QRCodeData QRdata = QRgen.CreateQrCode(textInput.Text, QRCodeGenerator.ECCLevel.Q);
-
-                    PngByteQRCode qrCode = new PngByteQRCode(QRdata);
-                    byte[] QRpng = qrCode.GetGraphic(20);
-
-                    using (var ms = new MemoryStream(QRpng))
-                    {
-                        var bm = new Avalonia.Media.Imaging.Bitmap(ms);
-                        Img.Source = bm;
-                    }
+                    Img.Source = QRgenerator(QRtext);
                 }
             };
         }
 
-        private void AutoPasteFromClipboard()
+        private string GetLocalIp()
         {
-            
+            var host = Dns.GetHostEntry(Dns.GetHostName());
+            foreach (var ip in host.AddressList)
+            {
+                if (ip.AddressFamily == AddressFamily.InterNetwork)
+                {
+                    return ip.ToString();
+                }
+            }
+            return "127.0.0.1";
+        }
+
+        private Avalonia.Media.Imaging.Bitmap QRgenerator(string QRtext)
+        {
+            QRCodeGenerator QRgen = new QRCodeGenerator();
+            QRCodeData QRdata = QRgen.CreateQrCode(QRtext, QRCodeGenerator.ECCLevel.Q);
+
+            PngByteQRCode qrCode = new PngByteQRCode(QRdata);
+            byte[] QRpng = qrCode.GetGraphic(20);
+
+            using (var ms = new MemoryStream(QRpng))
+            {
+                var bm = new Avalonia.Media.Imaging.Bitmap(ms);
+                return bm;
+            }
+        }
+
+        private void OnFileDrop(object? sender, DragEventArgs e)
+        {
+            var files = e.Data.GetFiles();
+            var textInput = this.Find<TextBox>("ContentInput");
+
+            if (files != null)
+            {
+                var firstFile = files.FirstOrDefault();
+                if (firstFile != null)
+                {
+                    string? filePath = firstFile.TryGetLocalPath();
+
+                    if (filePath != null)
+                    {
+                        fileToShare = filePath;
+
+                        textInput.Text = $"Файл готов: {System.IO.Path.GetFileName(filePath)}";
+                        textInput.BorderBrush = Brushes.DeepSkyBlue;
+                        textInput.BorderThickness = new Avalonia.Thickness(2);
+                    }
+                }
+            }
         }
 
     }
