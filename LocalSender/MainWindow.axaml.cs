@@ -28,7 +28,18 @@ namespace LocalSender
             var CloseBtn = this.Find<Button>("CloseButton");
             var MinBtn = this.Find<Button>("MinimizeButton");
             var TitleBar = this.Find<Grid>("Title");
+            var test = this.Find<Button>("testbtn");
 
+            test.Click += (s, e) =>
+            {
+                string ip = GetLocalIp();
+                string shareURL = $"http://{ip}:8080/";
+
+                Img.Source = QRgenerator(shareURL);
+
+                Task.Run(() => StartServer()); 
+            };
+            
 
             AddHandler(DragDrop.DropEvent, OnFileDrop);
 
@@ -104,6 +115,30 @@ namespace LocalSender
                 }
             }
             return "127.0.0.1";
+        }
+
+        private async Task StartServer() //вы не представляете как мне нравится все это писать, я себя реально гением чувствую когда чтото получается
+        {
+            var listenner = new HttpListener();
+            var ip = GetLocalIp();
+
+            listenner.Prefixes.Add($"http://{ip}:8080/"); //КТО Ж СУКА ЗНАЛ ЧТО ПРОСТО {ip}:{port} ЭТОЙ МРАЗИ НЕДОСТАТОЧНО
+            listenner.Start();
+
+            string shareurl = $"http://{ip}:8080/"; 
+
+            while(true)
+            {
+                var context = await listenner.GetContextAsync();
+                var response = context.Response;
+
+                if (fileToShare != null && File.Exists(fileToShare))
+                {
+
+                }
+            }
+
+
         }
 
         private Avalonia.Media.Imaging.Bitmap QRgenerator(string QRtext)
