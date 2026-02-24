@@ -1,18 +1,14 @@
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
-using Avalonia.Input.Platform;
 using Avalonia.Media;
-using Avalonia.Metadata;
 using Avalonia.Platform.Storage;
 using System;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Net;
-using System.Net.Sockets;
 using System.Diagnostics;
-using Tmds.DBus.Protocol;
 using MsBox.Avalonia;
 using MsBox.Avalonia.Enums;
 
@@ -21,6 +17,7 @@ namespace LocalSender
     public partial class MainWindow : Window
     {
 
+        Avalonia.Controls.TextBlock help;
         Avalonia.Controls.TextBlock textBlock;
         Avalonia.Controls.TextBlock TitleText;
         Avalonia.Controls.Border textBorder;
@@ -36,8 +33,34 @@ namespace LocalSender
             var TitleBar = this.Find<Grid>("Title");
             TitleText = this.Find<TextBlock>("textTitle");
             textBorder = this.Find<Border>("TextBorder");
+            help = this.Find<TextBlock>("Help");
 
+            help.PointerEntered += (s, e) =>
+            {
+                help.Foreground = SolidColorBrush.Parse("#007AFF");
+            };
+            help.PointerExited += (s, e) =>
+            {
+                help.Foreground = SolidColorBrush.Parse("#333333");
+            };
+            help.PointerPressed += async (s, e) =>
+            {
+                Process.Start("cmd.exe", "/k ipconfig");
 
+                
+                var box = MessageBoxManager.GetMessageBoxStandard(new MsBox.Avalonia.Dto.MessageBoxStandardParams
+                {
+                    ContentTitle = "Помощь",
+                    ContentMessage = "В окне командной строки найдите ваше активное сетевое подключение. Скопируйте значение из строки IPv4-адрес, вставьте его в адресную строку браузера на другом устройстве и добавьте в конце :8085.\nНапример: 192.168.0.207:8085",
+
+                    WindowStartupLocation = WindowStartupLocation.CenterScreen,
+                    ButtonDefinitions = ButtonEnum.Ok,
+                    Topmost = true
+
+                });
+                await box.ShowAsync();
+
+            };
             textBorder.PointerEntered += (s, e) =>
             {
                 if (fileToShare == null)
@@ -50,7 +73,7 @@ namespace LocalSender
             {
                 if (fileToShare == null)
                 {
-                    returnToDefault();
+                    returnTextBlockToDefault();
                 }
             };
 
@@ -171,9 +194,9 @@ namespace LocalSender
             }
 
             fileToShare = null;
-            returnToDefault();
+            returnTextBlockToDefault();
         }
-        private void returnToDefault()
+        private void returnTextBlockToDefault()
         {
             textBlock.Text = "Перенесите файл на окно";
             textBorder.BorderBrush = SolidColorBrush.Parse("#D1D1D6");

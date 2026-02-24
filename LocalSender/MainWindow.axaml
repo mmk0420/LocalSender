@@ -4,7 +4,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         x:Class="LocalSender.MainWindow"
         Title="LocalSender"
-        Width="300" Height="230"
+        Width="300" Height="240"
         WindowStartupLocation="CenterScreen"
         CanResize="False"
         Background="#F2F2F7"
@@ -50,19 +50,22 @@
            <StackPanel Orientation="Horizontal" Spacing="6" Margin="15,0" HorizontalAlignment="Left" VerticalAlignment="Center">
                <Button Name="CloseButton" Height="12" Width="12" Background="#FF5F57" CornerRadius="6" BorderThickness="0" Classes="WindowControl"/>
                <Button Name="MinimizeButton" Height="12" Width="12" Background="#FFBD2E" CornerRadius="6" BorderThickness="0" Classes="WindowControl"/>
-           </StackPanel>
-
-           <TextBlock Name="textTitle"
+               <TextBlock Name="textTitle"
                       Text="LocalSender"
                       Foreground="#333333"
                       FontSize="12"
                       HorizontalAlignment="Center"
                       VerticalAlignment="Center"
-                      IsHitTestVisible="False"/>
+                      IsHitTestVisible="False"
+                      Padding="65,0"/>
+           </StackPanel>
+
+           
+
         </Grid>
         <StackPanel VerticalAlignment="Center"
                     HorizontalAlignment="Center"
-                    Spacing="15"
+                    Spacing="10"
                     Margin="15">
             <Border Name="TextBorder"
                     BorderBrush="#D1D1D6"
@@ -93,6 +96,14 @@
                     Background="#007AFF"
                     Foreground="White"
                     CornerRadius="8"/>
+            <TextBlock Name="Help"
+                       Text="Как получить файл?"
+                       Foreground="#333333"
+                       HorizontalAlignment="Center"
+                       FontSize="9"
+                       FontWeight="Light"
+                       TextDecorations="Underline"
+                       Background="Transparent"/>
         </StackPanel>
     </StackPanel>
 
