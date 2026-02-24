@@ -5,7 +5,6 @@ using Avalonia.Input.Platform;
 using Avalonia.Media;
 using Avalonia.Metadata;
 using Avalonia.Platform.Storage;
-using QRCoder;
 using System;
 using System.IO;
 using System.Linq;
@@ -14,51 +13,56 @@ using System.Net;
 using System.Net.Sockets;
 using System.Diagnostics;
 using Tmds.DBus.Protocol;
+using MsBox.Avalonia;
+using MsBox.Avalonia.Enums;
 
 namespace LocalSender
 {
     public partial class MainWindow : Window
     {
 
-        Avalonia.Controls.TextBox textInput;
-        Avalonia.Controls.Image Img;
+        Avalonia.Controls.TextBlock textBlock;
         Avalonia.Controls.TextBlock TitleText;
+        Avalonia.Controls.Border textBorder;
         string? fileToShare;
         public MainWindow()
         {
             InitializeComponent();
 
-            textInput = this.Find<TextBox>("ContentInput");
             var sendBtn = this.Find<Button>("SendButton");
-            Img = this.Find<Avalonia.Controls.Image>("QRCode");
+            textBlock = this.Find<TextBlock>("TextBlock");
             var CloseBtn = this.Find<Button>("CloseButton");
             var MinBtn = this.Find<Button>("MinimizeButton");
             var TitleBar = this.Find<Grid>("Title");
-            var ipBtn = this.Find<Button>("IPbtn");
             TitleText = this.Find<TextBlock>("textTitle");
+            textBorder = this.Find<Border>("TextBorder");
 
-            ipBtn.Click += (s, e) => LocalSend();
+
+            textBorder.PointerEntered += (s, e) =>
+            {
+                if (fileToShare == null)
+                {
+                    textBorder.BorderBrush = SolidColorBrush.Parse("#007AFF");
+                    textBorder.BorderThickness = new Thickness(2);
+                }
+            };
+            textBorder.PointerExited += (s, e) =>
+            {
+                if (fileToShare == null)
+                {
+                    returnToDefault();
+                }
+            };
 
             AddHandler(DragDrop.DropEvent, OnFileDrop);
 
             this.Activated += async (s, e) =>
             {
-                var clipboard = TopLevel.GetTopLevel(this)?.Clipboard;
-                if (clipboard == null) return;
-
-                var text = await clipboard.GetTextAsync();
-
-                if (string.IsNullOrWhiteSpace(text)) return;
-                text = text.Trim();
-
-                bool isLink = text.StartsWith("http", StringComparison.OrdinalIgnoreCase);
-                bool isFieldEmpty = string.IsNullOrWhiteSpace(textInput.Text);
-                if (isLink && isFieldEmpty)
+                this.Opacity = 0;
+                for (double i = 0; i < 1; i+=0.1)
                 {
-                    textInput.Text = text;
-                    textInput.BorderBrush = Brushes.LightGreen;
-                    await Task.Delay(1000);
-                    textInput.BorderBrush = new SolidColorBrush(Color.Parse("#007AFF"));
+                    this.Opacity = i;
+                    await Task.Delay(20);
                 }
             };
 
@@ -66,56 +70,37 @@ namespace LocalSender
             {
                 for (double i = 1.0; i >= 0; i -= 0.1)
                 {
-                     this.Opacity = i;
-                     await Task.Delay(20);
+                    this.Opacity = i;
+                    await Task.Delay(20);
                 }
                 this.Close();
             };
+
             MinBtn.Click += async (s, e) =>
             {
                 for (double i = 1.0; i >= 0.8; i -= 0.05)
                 {
                     this.Opacity = i;
-                    await Task.Delay(20); 
+                    await Task.Delay(20);
                 }
                 this.WindowState = WindowState.Minimized;
                 this.Opacity = 1.0;
             };
 
-
             TitleBar.PointerPressed += (s, e) => this.BeginMoveDrag(e);
 
             sendBtn.Click += async (s, e) =>
             {
-                if (string.IsNullOrWhiteSpace(textInput.Text))
+                if (fileToShare != null && File.Exists(fileToShare))
                 {
-                    textInput.BorderBrush = Brushes.Crimson;
-                    await Task.Delay(1000);
-                    textInput.BorderBrush = new SolidColorBrush(Color.Parse("#D1D1D6"));
-                }
-                else
-                {
-                    string QRtext = textInput.Text;
-                    textInput.BorderBrush = new SolidColorBrush(Color.Parse("#007AFF"));
-                    Img.Source = QRgenerator(QRtext);
+                    Task.Run(() => LocalSend());
+                    textBlock.Text = "Файл отправлен";
                 }
             };
+
         }
 
-        private Avalonia.Media.Imaging.Bitmap QRgenerator(string QRtext)
-        {
-            QRCodeGenerator QRgen = new QRCodeGenerator();
-            QRCodeData QRdata = QRgen.CreateQrCode(QRtext, QRCodeGenerator.ECCLevel.Q);
-
-            PngByteQRCode qrCode = new PngByteQRCode(QRdata);
-            byte[] QRpng = qrCode.GetGraphic(20);
-
-            using (var ms = new MemoryStream(QRpng))
-            {
-                var bm = new Avalonia.Media.Imaging.Bitmap(ms);
-                return bm;
-            }
-        }
+        
 
         private void OnFileDrop(object? sender, DragEventArgs e)
         {
@@ -131,10 +116,9 @@ namespace LocalSender
                     if (filePath != null)
                     {
                         fileToShare = filePath;
-
-                        textInput.Text = $"Файл готов: {System.IO.Path.GetFileName(filePath)}";
-                        textInput.BorderBrush = Brushes.DeepSkyBlue;
-                        textInput.BorderThickness = new Avalonia.Thickness(2);
+                        textBlock.Text = "Файл готов к отправке";
+                        textBorder.BorderBrush = SolidColorBrush.Parse("#007AFF");
+                        textBorder.BorderThickness = new Thickness(2);
                     }
                 }
             }
@@ -142,44 +126,58 @@ namespace LocalSender
 
         private async Task LocalSend()
         {
-            if (fileToShare != null && File.Exists(fileToShare))
+            if (string.IsNullOrEmpty(fileToShare) || !File.Exists(fileToShare)) return;
+
+            using (var listener = new HttpListener())
             {
-                var listener = new HttpListener();
                 listener.Prefixes.Add("http://+:8085/");
                 try
                 {
                     listener.Start();
-                    Img.Source = QRgenerator("http://192.168.0.207:8085");
-                    TitleText.Text = "zaebok";
                 }
-                catch (Exception ex) { TitleText.Text = $"Ошибка: {ex.Message}"; }
-
-                while (true)
+                catch (HttpListenerException ex)
                 {
-                    var context = await listener.GetContextAsync();
-                    var response = context.Response;
+                    string exPrefix = ex.ErrorCode == 5
+                        ? "\nЧтобы исправить эту ошибку, выполните инструкцию в Readme"
+                        : "";
+                    await MessageBoxManager.GetMessageBoxStandard("Ошибка", $"{ex.Message}" + exPrefix, ButtonEnum.Ok).ShowAsync();
+                    return;
+                }
 
-                    response.ContentType = "application/octet-stream";
+                var context = await listener.GetContextAsync();
 
-                    string fileName = Path.GetFileName(fileToShare);
-                    string RUSSIAfileName = Uri.EscapeDataString(fileName);
-
-                    response.AddHeader("Content-Disposition", $"attachment; filename=\"{RUSSIAfileName}\""); 
-
-                    using (FileStream fs = new FileStream(fileToShare, FileMode.Open, FileAccess.Read))
+                using (var response = context.Response)
+                {
+                    try
                     {
-                        response.ContentLength64 = fs.Length;
-                        byte[] buffer = new byte[81920];
-                        int bytesRead;
+                        response.ContentType = "application/octet-stream";
+                        string fileName = Path.GetFileName(fileToShare);
+                        string RUSSIANFileName = Uri.EscapeDataString(fileName);
+                        response.AddHeader("Content-Disposition", $"attachment; filename=\"{RUSSIANFileName}\"");
 
-                        while ((bytesRead = fs.Read(buffer, 0, buffer.Length)) > 0)
+                        using (FileStream fs = new FileStream(fileToShare, FileMode.Open, FileAccess.Read))
                         {
-                            response.OutputStream.Write(buffer, 0, bytesRead);
+                            response.ContentLength64 = fs.Length;
+                            await fs.CopyToAsync(response.OutputStream);
                         }
                     }
-                    response.OutputStream.Close();
+                    finally
+                    {
+                        response.OutputStream.Close();
+                    }
                 }
+
+                listener.Stop(); 
             }
+
+            fileToShare = null;
+            returnToDefault();
+        }
+        private void returnToDefault()
+        {
+            textBlock.Text = "Перенесите файл на окно";
+            textBorder.BorderBrush = SolidColorBrush.Parse("#D1D1D6");
+            textBorder.BorderThickness = new Thickness(1);
         }
 
     }
